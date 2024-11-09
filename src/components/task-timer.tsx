@@ -8,6 +8,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Card,
+  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -33,6 +34,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { useInterval } from "@/hooks/useInterval";
 import { format } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 type Task = {
   id: string | null;
@@ -68,7 +70,7 @@ const TaskForm = ({ onSubmit }: { onSubmit: (task: Task) => void }) => {
   return (
     <Form {...form}>
       <form
-        className="flex items-start gap-4"
+        className="flex flex-col items-start gap-2 sm:flex-row"
         onSubmit={form.handleSubmit(({ task }) => onSubmit(task))}
       >
         <FormField
@@ -103,7 +105,7 @@ const TaskForm = ({ onSubmit }: { onSubmit: (task: Task) => void }) => {
                   {query.length > 0 && (
                     <ComboboxOption
                       value={{ id: null, title: query }}
-                      className="data-[focus]:bg-blue-100"
+                      className="data-[focus]:bg-muted"
                     >
                       Create <span className="font-bold">{`"${query}"`}</span>
                     </ComboboxOption>
@@ -128,7 +130,9 @@ const TaskForm = ({ onSubmit }: { onSubmit: (task: Task) => void }) => {
             </FormItem>
           )}
         />
-        <Button type="submit">Start</Button>
+        <Button type="submit" className="w-full sm:w-auto">
+          Start
+        </Button>
       </form>
     </Form>
   );
@@ -140,7 +144,7 @@ export const TaskTimer = () => {
   const [currentTask, setCurrentTask] = useState<Task | null>(null);
 
   const elapsedTime = currentTimestamp - startTimestamp;
-  const visualElapsedTime = format("%2d : %2d", [
+  const visualElapsedTime = format("%2d:%2d", [
     Math.floor(elapsedTime / 1000 / 60),
     Math.floor(elapsedTime / 1000) % 60,
   ]);
@@ -157,24 +161,29 @@ export const TaskTimer = () => {
   };
 
   return (
-    <div className="mx-auto w-full space-y-8 md:w-2/3 lg:w-1/2">
-      <Card>
-        <CardHeader className="text-center">
-          <CardTitle className="text-6xl font-bold">
-            {visualElapsedTime}
-          </CardTitle>
-          <CardDescription>
-            {currentTask === null && "Time to start your task!"}
-            {currentTask !== null && (
-              <>
-                {`Stay focused! You're doing awesome at `}
-                <b>{`"${currentTask.title}"`}</b>!
-              </>
-            )}
-          </CardDescription>
-        </CardHeader>
-      </Card>
-      <TaskForm onSubmit={onSubmit} />
-    </div>
+    <Card
+      className={cn(
+        "col-start-2 row-start-2 mx-auto",
+        "h-80 w-full content-center space-y-4 sm:w-3/5 md:w-1/2 lg:w-2/5 xl:w-1/3",
+      )}
+    >
+      <CardHeader className="text-center font-[family-name:var(--font-geist-mono)]">
+        <CardTitle className="text-6xl font-bold">
+          {visualElapsedTime}
+        </CardTitle>
+        <CardDescription>
+          {currentTask === null && "Time to start your task!"}
+          {currentTask !== null && (
+            <>
+              {`Stay focused! You're doing awesome at `}
+              <b>{`"${currentTask.title}"`}</b>!
+            </>
+          )}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <TaskForm onSubmit={onSubmit} />
+      </CardContent>
+    </Card>
   );
 };
