@@ -1,6 +1,10 @@
 "use client";
 
-import { type FormEvent, Fragment, useState } from "react";
+import { Fragment, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,6 +18,13 @@ import {
   ComboboxOption,
   ComboboxOptions,
 } from "@/components/ui/combo-box";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
   selectStartTimestamp,
@@ -28,6 +39,18 @@ type Task = {
   title: string;
 };
 
+const schema = z.object({
+  task: z.object(
+    {
+      id: z.string().nullable(),
+      title: z.string().min(1, {
+        message: "Please enter a task. It cannot be empty string.",
+      }),
+    },
+    { message: "Please enter a task. It cannot be empty." },
+  ),
+});
+
 const TaskForm = ({ onSubmit }: { onSubmit: (task: Task) => void }) => {
   const tasks: Task[] = [{ id: "1", title: "10-minutes workout" }];
   const [query, setQuery] = useState("");
@@ -35,45 +58,79 @@ const TaskForm = ({ onSubmit }: { onSubmit: (task: Task) => void }) => {
     return title.toLowerCase().includes(query.toLowerCase());
   });
 
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (selectedTask !== null) onSubmit(selectedTask);
-  };
+  const form = useForm<z.infer<typeof schema>>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      task: { id: null, title: "" },
+    },
+  });
 
   return (
-    <form className="flex items-start gap-4" onSubmit={handleSubmit}>
-      <Combobox
-        value={selectedTask}
-        onChange={setSelectedTask}
-        onClose={() => setQuery("")}
+    <Form {...form}>
+      <form
+        className="flex items-start gap-4"
+        onSubmit={form.handleSubmit(({ task }) => onSubmit(task))}
       >
-        <ComboboxInput
-          as={Fragment}
-          aria-label="task title"
-          displayValue={(task: Task) => task?.title}
-          onChange={(event) => setQuery(event.target.value)}
-        >
-          <Input placeholder="Reading a book" />
-        </ComboboxInput>
-        <ComboboxOptions>
-          {query.length > 0 && (
-            <ComboboxOption
-              value={{ id: null, title: query }}
-              className="data-[focus]:bg-blue-100"
-            >
-              Create <span className="font-bold">{`"${query}"`}</span>
-            </ComboboxOption>
+        <FormField
+          control={form.control}
+          name="task"
+          render={({
+            field: { onChange, onBlur, value, name, ref },
+            formState: { errors },
+          }) => (
+            <FormItem className="w-full">
+              <Combobox
+                name={name}
+                value={value}
+                onChange={onChange}
+                onClose={() => setQuery("")}
+              >
+                <FormControl>
+                  <ComboboxInput
+                    as={Fragment}
+                    aria-label="task title"
+                    displayValue={(task: Task) => task?.title}
+                    onChange={(e) => setQuery(e.target.value)}
+                  >
+                    <Input
+                      ref={ref}
+                      placeholder="Reading a book"
+                      onBlur={onBlur}
+                    />
+                  </ComboboxInput>
+                </FormControl>
+                <ComboboxOptions>
+                  {query.length > 0 && (
+                    <ComboboxOption
+                      value={{ id: null, title: query }}
+                      className="data-[focus]:bg-blue-100"
+                    >
+                      Create <span className="font-bold">{`"${query}"`}</span>
+                    </ComboboxOption>
+                  )}
+                  {visualTasks?.map((item) => (
+                    <ComboboxOption key={item.id} value={item}>
+                      {item.title}
+                    </ComboboxOption>
+                  ))}
+                </ComboboxOptions>
+              </Combobox>
+              <FormField
+                control={form.control}
+                name="task.title"
+                render={() => (
+                  // 에러인데 task.title 메시지가 없으면 task 메시지를 보여준다.
+                  <FormMessage>
+                    {errors.task && String(errors.task.message)}
+                  </FormMessage>
+                )}
+              />
+            </FormItem>
           )}
-          {visualTasks?.map((item) => (
-            <ComboboxOption key={item.id} value={item}>
-              {item.title}
-            </ComboboxOption>
-          ))}
-        </ComboboxOptions>
-      </Combobox>
-      <Button type="submit">Start</Button>
-    </form>
+        />
+        <Button type="submit">Start</Button>
+      </form>
+    </Form>
   );
 };
 
